@@ -148,8 +148,12 @@ private[parquet4s] object writer {
       .evalMapChunk(entity => F.catchNonFatal(ParquetRecordEncoder.encode[T](entity, valueCodecConfiguration)))
       .through(
         pipe(
-          ParquetWriter
-            .internalWriter(path, ParquetSchemaResolver.resolveSchema[T], ExtraMetadata.NoExtraMetadata, options)
+          ParquetWriter.internalWriter(
+            path.toOutputFile(options),
+            ParquetSchemaResolver.resolveSchema[T],
+            ExtraMetadata.NoExtraMetadata,
+            options
+          )
         )
       )
   }
