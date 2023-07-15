@@ -304,9 +304,10 @@ private class ParquetPartitioningFlow[T, W](
               logger.debug("Creating writer to write to [{}]", writerPath)
 
               val writer = ParquetWriter.internalWriter(
-                path    = Path(writerPath, newFileName),
-                schema  = schema,
-                options = writeOptions
+                path          = Path(writerPath, newFileName),
+                schema        = schema,
+                extraMetadata = ExtraMetadata.NoExtraMetadata,
+                options       = writeOptions
               )
 
               val state = WriterState(

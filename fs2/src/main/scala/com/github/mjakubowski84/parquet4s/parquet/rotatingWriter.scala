@@ -271,7 +271,12 @@ object rotatingWriter {
         for {
           internalWrite <- F.delay(
             scala.concurrent.blocking(
-              ParquetWriter.internalWriter(basePath.append(newFileName(options)), schema, options)
+              ParquetWriter.internalWriter(
+                basePath.append(newFileName(options)),
+                schema,
+                ExtraMetadata.NoExtraMetadata,
+                options
+              )
             )
           )
           rotationFiber <- F.delayBy(eventQueue.offer(RotateEvent[F, T, W](basePath)), maxDuration).start

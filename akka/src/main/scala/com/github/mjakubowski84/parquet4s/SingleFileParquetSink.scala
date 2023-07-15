@@ -99,13 +99,13 @@ object SingleFileParquetSink {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  private def rowParquetRecordSink[T: ParquetRecordEncoder: ParquetSchemaResolver](
+  private def rowParquetRecordSink[T: ParquetSchemaResolver](
       path: Path,
       options: ParquetWriter.Options = ParquetWriter.Options()
-  ): Sink[T, Future[Done]] = {
+  )(implicit encoder: ParquetRecordEncoder[T]): Sink[T, Future[Done]] = {
     val valueCodecConfiguration = ValueCodecConfiguration(options)
     val schema                  = ParquetSchemaResolver.resolveSchema[T]
-    val writer                  = ParquetWriter.internalWriter(path, schema, options)
+    val writer                  = ParquetWriter.internalWriter(path, schema, encoder, options)
 
     def encode(data: T): RowParquetRecord = ParquetRecordEncoder.encode[T](data, valueCodecConfiguration)
 

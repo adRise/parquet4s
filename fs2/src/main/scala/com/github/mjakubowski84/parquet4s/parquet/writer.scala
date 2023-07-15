@@ -3,6 +3,7 @@ package com.github.mjakubowski84.parquet4s.parquet
 import cats.effect.{Resource, Sync}
 import cats.implicits.*
 import com.github.mjakubowski84.parquet4s.{
+  ExtraMetadata,
   ParquetRecordEncoder,
   ParquetSchemaResolver,
   ParquetWriter,
@@ -145,7 +146,12 @@ private[parquet4s] object writer {
     val valueCodecConfiguration = ValueCodecConfiguration(options)
     in
       .evalMapChunk(entity => F.catchNonFatal(ParquetRecordEncoder.encode[T](entity, valueCodecConfiguration)))
-      .through(pipe(ParquetWriter.internalWriter(path, ParquetSchemaResolver.resolveSchema[T], options)))
+      .through(
+        pipe(
+          ParquetWriter
+            .internalWriter(path, ParquetSchemaResolver.resolveSchema[T], ExtraMetadata.NoExtraMetadata, options)
+        )
+      )
   }
 
   private def pipe[F[_]: Sync, T](makeParquetWriter: => HadoopParquetWriter[T]): Pipe[F, T, Nothing] =

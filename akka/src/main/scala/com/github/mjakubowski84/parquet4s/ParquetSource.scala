@@ -147,21 +147,22 @@ object ParquetSource extends IOOps {
     )
   }
 
-  private def createSource[T: ParquetRecordDecoder](
+  private def createSource[T](
       valueCodecConfiguration: ValueCodecConfiguration,
       hadoopConf: Configuration,
       projectedSchemaOpt: Option[MessageType]
-  ): (FilterCompat.Filter, PartitionedPath) => Source[T, NotUsed] = { (filterCompat, partitionedPath) =>
-    def decode(record: RowParquetRecord): T = ParquetRecordDecoder.decode[T](record, valueCodecConfiguration)
+  )(implicit decoder: ParquetRecordDecoder[T]): (FilterCompat.Filter, PartitionedPath) => Source[T, NotUsed] = {
+    (filterCompat, partitionedPath) =>
+      def decode(record: RowParquetRecord): T = ParquetRecordDecoder.decode[T](record, valueCodecConfiguration)
 
-    Source
-      .unfoldResource[RowParquetRecord, HadoopParquetReader[RowParquetRecord]](
-        create = () => createReader(hadoopConf, filterCompat, partitionedPath, projectedSchemaOpt),
-        read   = reader => Option(reader.read()),
-        close  = _.close()
-      )
-      .map(setPartitionValues(partitionedPath))
-      .map(decode)
+      Source
+        .unfoldResource[RowParquetRecord, HadoopParquetReader[RowParquetRecord]](
+          create = () => createReader(hadoopConf, filterCompat, partitionedPath, projectedSchemaOpt, decoder),
+          read   = reader => Option(reader.read()),
+          close  = _.close()
+        )
+        .map(setPartitionValues(partitionedPath))
+        .map(decode)
   }
 
   private def setPartitionValues(partitionedPath: PartitionedPath)(record: RowParquetRecord) =
@@ -173,10 +174,14 @@ object ParquetSource extends IOOps {
       hadoopConf: Configuration,
       filterCompat: FilterCompat.Filter,
       partitionedPath: PartitionedPath,
-      projectedSchemaOpt: Option[MessageType]
+      projectedSchemaOpt: Option[MessageType],
+      decoder: ParquetRecordDecoder[_]
   ): HadoopParquetReader[RowParquetRecord] =
     HadoopParquetReader
-      .builder[RowParquetRecord](new ParquetReadSupport(projectedSchemaOpt), partitionedPath.path.toHadoop)
+      .builder[RowParquetRecord](
+        new ParquetReadSupport(projectedSchemaOpt, setMetadata = decoder.setMetadata),
+        partitionedPath.path.toHadoop
+      )
       .withConf(hadoopConf)
       .withFilter(filterCompat)
       .build()

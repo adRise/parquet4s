@@ -117,7 +117,10 @@ object ParquetReader extends IOOps {
         iteratorFactory = () =>
           new ParquetIterator(
             HadoopParquetReader
-              .builder[RowParquetRecord](new ParquetReadSupport(projectedSchemaOpt, columnProjections), path.toHadoop)
+              .builder[RowParquetRecord](
+                new ParquetReadSupport(projectedSchemaOpt, columnProjections, decoder.setMetadata),
+                path.toHadoop
+              )
               .withConf(hadoopConf)
               .withFilter(filterCompat)
           ),
