@@ -40,7 +40,7 @@ class ScalaPBParquetRecordEncoder[T <: GeneratedMessage] extends ParquetRecordEn
       case (ScalaType.String, PString(value))   => BinaryValue(Binary.fromString(value))
       case (ScalaType.ByteString, PByteString(value)) =>
         BinaryValue(Binary.fromReusedByteBuffer(value.asReadOnlyByteBuffer()))
-      case (ScalaType.Message(_), msg: PMessage)                             => encodeMessage(msg)
+      case (ScalaType.Message(_), msg: PMessage)                                              => encodeMessage(msg)
       case (ScalaType.Message(md), PRepeated(values)) if fd.isMapField && md.fields.size == 2 => encodeMap(md, values)
       case (_, PRepeated(values))            => ListParquetRecord(values.map(encodeField(fd, _)): _*)
       case (_, PEmpty)                       => NullValue

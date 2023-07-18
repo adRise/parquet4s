@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers
 
 import java.nio.file.Files
 
-class InMemoryOutputFileSpec extends AnyFlatSpec with Matchers {
+class InMemoryFileSpec extends AnyFlatSpec with Matchers {
   it should "write to in-memory output file" in {
     case class Data(id: Int, text: String)
 
@@ -23,6 +23,24 @@ class InMemoryOutputFileSpec extends AnyFlatSpec with Matchers {
     // read
     val readData = ParquetReader.as[Data].read(Path(inputFile))
     try readData.toSeq shouldBe data
+    finally readData.close()
+  }
+
+  it should "read from in-memory input file" in {
+    case class Data(id: Int, text: String)
+
+    val count      = 100
+    val data       = (1 to count).map(i => Data(id = i, text = RandomStringUtils.randomPrint(4)))
+    val outputFile = InMemoryOutputFile.create(1024)
+
+    // write
+    ParquetWriter.of[Data].writeAndClose(outputFile, data)
+
+    val inputFile = InMemoryInputFile.fromBytesUnsafe(outputFile.takeAndReuse())
+
+    // read
+    val readData = ParquetReader.as[Data].read(inputFile)
+    try readData.toList shouldBe data
     finally readData.close()
   }
 }
