@@ -1,5 +1,5 @@
+import sbt._
 import sbt.Keys._
-import sbt.{Credentials, Def, Developer, IntegrationTest, Keys, Opts, ScmInfo, Test, url}
 import xerial.sbt.Sonatype._
 import xerial.sbt.Sonatype.autoImport.{sonatypeProfileName, sonatypeProjectHosting}
 
@@ -7,24 +7,7 @@ object Releasing {
 
   lazy val publishSettings: Seq[Def.Setting[_]] = {
     Seq(
-      Keys.credentials ++= Seq(
-        Credentials(
-          realm = "Sonatype Nexus Repository Manager",
-          host  = "oss.sonatype.org",
-          userName = sys.env.getOrElse(
-            "SONATYPE_USER_NAME", {
-              streams.value.log.warn("Undefined environment variable: SONATYPE_USER_NAME")
-              "UNDEFINED"
-            }
-          ),
-          passwd = sys.env.getOrElse(
-            "SONATYPE_PASSWORD", {
-              streams.value.log.warn("Undefined environment variable: SONATYPE_PASSWORD")
-              "UNDEFINED"
-            }
-          )
-        )
-      ),
+      Keys.credentials += Credentials.loadCredentials(Path.userHome / ".artifactory" / "credentials").right.get,
       licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
       homepage := Some(url("https://github.com/mjakubowski84/parquet4s")),
       scmInfo := Some(
@@ -47,10 +30,7 @@ object Releasing {
       ),
       publishMavenStyle := true,
       publishTo := Some(
-        if (isSnapshot.value)
-          Opts.resolver.mavenLocalFile
-        else
-          Opts.resolver.sonatypeStaging
+        "sbtDev" at s"https://tubins.jfrog.io/artifactory/jvm-snapshots;build.timestamp=${new java.util.Date().getTime}"
       ),
       Test / publishArtifact := false,
       IntegrationTest / publishArtifact := false
