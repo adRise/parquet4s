@@ -10,7 +10,7 @@ lazy val three                  = "3.2.2"
 lazy val supportedScalaVersions = Seq(twoTwelve, twoThirteen, three)
 
 ThisBuild / organization := "com.github.mjakubowski84"
-ThisBuild / version := "2.11.1-tubi-5-SNAPSHOT"
+ThisBuild / version := "2.11.1-tubi-10"
 ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := twoThirteen
 
