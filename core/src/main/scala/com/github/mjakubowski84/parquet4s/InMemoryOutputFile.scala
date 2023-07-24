@@ -1,24 +1,29 @@
 package com.github.mjakubowski84.parquet4s
 
 import org.apache.hadoop.fs.FileAlreadyExistsException
-import org.apache.parquet.io.{InputFile, OutputFile, PositionOutputStream}
+import org.apache.parquet.io.{OutputFile, PositionOutputStream}
 
 import java.io.ByteArrayOutputStream
-import scala.collection.mutable
 import scala.language.reflectiveCalls
-import scala.util.control.NoStackTrace
 
 object InMemoryOutputFile {
-  def create(initSize: Int): InMemoryOutputFile = create(initSize, 3 * initSize)
-  def create(initSize: Int, maxSize: Int): InMemoryOutputFile = new InMemoryOutputFile(initSize, maxSize)
+  val DefaultBlockSize: Int = 64 << 10
+
+  def create(
+      initBufferSize: Int,
+      maxBufferSize: Option[Int] = None,
+      blockSize: Int             = DefaultBlockSize
+  ): InMemoryOutputFile =
+    new InMemoryOutputFile(initBufferSize, maxBufferSize.getOrElse(3 * initBufferSize), blockSize)
 }
 
-class InMemoryOutputFile(initSize: Int, maxSize: Int) extends OutputFile {
-  private val os = new ByteArrayOutputStream(initSize) {
+class InMemoryOutputFile(initBufferSize: Int, maxBufferSize: Int, blockSize: Int = InMemoryOutputFile.DefaultBlockSize)
+    extends OutputFile {
+  private val os = new ByteArrayOutputStream(initBufferSize) {
     def takeAndReuse: Array[Byte] = {
       val content = toByteArray()
-      if (buf.length > maxSize) {
-        buf = new Array[Byte](initSize)
+      if (buf.length > maxBufferSize) {
+        buf = new Array[Byte](initBufferSize)
       }
       count = 0
       content
@@ -39,10 +44,9 @@ class InMemoryOutputFile(initSize: Int, maxSize: Int) extends OutputFile {
     create(blockSizeHint)
   }
 
-  override def supportsBlockSize(): Boolean = false
+  override def supportsBlockSize(): Boolean = true
 
-  override def defaultBlockSize(): Long =
-    throw new UnsupportedOperationException("Block size is not supported by InMemoryOutputFile") with NoStackTrace
+  override def defaultBlockSize(): Long = blockSize
 
   def takeAndReuse(): Array[Byte] = os.takeAndReuse
 
