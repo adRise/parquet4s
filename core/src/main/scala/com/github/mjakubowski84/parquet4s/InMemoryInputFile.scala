@@ -54,7 +54,7 @@ class InMemoryInputFile private (content: Array[Byte]) extends InputFile {
     override def read(): Int =
       if (remaining == 0) -1
       else {
-        val next = content(pos).toInt
+        val next = content(pos) & 255
         pos += 1
         next
       }
